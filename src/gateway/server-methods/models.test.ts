@@ -119,4 +119,37 @@ describe("models.list", () => {
       vi.useRealTimers();
     }
   });
+
+  it("preserves catalog load errors before the timeout fallback wins", async () => {
+    const respond = vi.fn();
+
+    await modelsHandlers["models.list"]({
+      req: {
+        type: "req",
+        id: "req-models-list-catalog-error",
+        method: "models.list",
+        params: { view: "configured" },
+      },
+      params: { view: "configured" },
+      respond,
+      client: null,
+      isWebchatConnect: () => false,
+      context: {
+        getRuntimeConfig: () => ({}) as OpenClawConfig,
+        loadGatewayModelCatalog: vi.fn(() => Promise.reject(new Error("catalog failed"))),
+        logGateway: {
+          debug: vi.fn(),
+        },
+      } as never,
+    });
+
+    expect(respond).toHaveBeenCalledWith(
+      false,
+      undefined,
+      expect.objectContaining({
+        code: "UNAVAILABLE",
+        message: "Error: catalog failed",
+      }),
+    );
+  });
 });
