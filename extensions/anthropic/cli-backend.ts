@@ -30,6 +30,7 @@ export function buildAnthropicCliBackend(): CliBackendPlugin {
     config: {
       command: "claude",
       args: [
+        "--bare",
         "-p",
         "--output-format",
         "stream-json",
@@ -42,6 +43,7 @@ export function buildAnthropicCliBackend(): CliBackendPlugin {
         "mcp__openclaw__*",
       ],
       resumeArgs: [
+        "--bare",
         "-p",
         "--output-format",
         "stream-json",

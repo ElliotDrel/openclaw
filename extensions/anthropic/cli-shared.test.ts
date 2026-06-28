@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildAnthropicCliBackend } from "./cli-backend.js";
 import {
   CLAUDE_CLI_CLEAR_ENV,
+  normalizeClaudeBareArgs,
   normalizeClaudeBackendConfig,
   normalizeClaudePermissionArgs,
   normalizeClaudeSettingSourcesArgs,
@@ -75,6 +76,23 @@ describe("normalizeClaudeSettingSourcesArgs", () => {
   });
 });
 
+describe("normalizeClaudeBareArgs", () => {
+  it("injects bare mode when args omit it", () => {
+    expect(normalizeClaudeBareArgs(["-p", "--output-format", "stream-json"])).toEqual([
+      "--bare",
+      "-p",
+      "--output-format",
+      "stream-json",
+    ]);
+  });
+
+  it("deduplicates bare mode and keeps it first", () => {
+    expect(
+      normalizeClaudeBareArgs(["-p", "--bare", "--output-format", "stream-json", "--bare"]),
+    ).toEqual(["--bare", "-p", "--output-format", "stream-json"]);
+  });
+});
+
 describe("normalizeClaudeBackendConfig", () => {
   it("normalizes both args and resumeArgs for custom overrides", () => {
     const normalized = normalizeClaudeBackendConfig({
@@ -84,22 +102,26 @@ describe("normalizeClaudeBackendConfig", () => {
     });
 
     expect(normalized.args).toEqual([
+      "--bare",
       "-p",
       "--output-format",
       "stream-json",
       "--verbose",
+      "--safe-mode",
       "--setting-sources",
       "user",
       "--permission-mode",
       "bypassPermissions",
     ]);
     expect(normalized.resumeArgs).toEqual([
+      "--bare",
       "-p",
       "--output-format",
       "stream-json",
       "--verbose",
       "--resume",
       "{sessionId}",
+      "--safe-mode",
       "--setting-sources",
       "user",
       "--permission-mode",
@@ -188,10 +210,14 @@ describe("normalizeClaudeBackendConfig", () => {
     });
 
     expect(normalized?.args).toContain("--setting-sources");
+    expect(normalized?.args?.[0]).toBe("--bare");
+    expect(normalized?.args).toContain("--safe-mode");
     expect(normalized?.args).toContain("user");
     expect(normalized?.args).toContain("--permission-mode");
     expect(normalized?.args).toContain("bypassPermissions");
     expect(normalized?.resumeArgs).toContain("--setting-sources");
+    expect(normalized?.resumeArgs?.[0]).toBe("--bare");
+    expect(normalized?.resumeArgs).toContain("--safe-mode");
     expect(normalized?.resumeArgs).toContain("user");
     expect(normalized?.resumeArgs).toContain("--permission-mode");
     expect(normalized?.resumeArgs).toContain("bypassPermissions");
@@ -206,8 +232,12 @@ describe("normalizeClaudeBackendConfig", () => {
     expect(backend.config.output).toBe("jsonl");
     expect(backend.config.input).toBe("stdin");
     expect(backend.config.args).toContain("--setting-sources");
+    expect(backend.config.args[0]).toBe("--bare");
+    expect(backend.config.args).toContain("--safe-mode");
     expect(backend.config.args).toContain("user");
     expect(backend.config.resumeArgs).toContain("--setting-sources");
+    expect(backend.config.resumeArgs[0]).toBe("--bare");
+    expect(backend.config.resumeArgs).toContain("--safe-mode");
     expect(backend.config.resumeArgs).toContain("user");
     expect(backend.config.clearEnv).toEqual([...CLAUDE_CLI_CLEAR_ENV]);
     expect(backend.config.clearEnv).toContain("ANTHROPIC_API_TOKEN");

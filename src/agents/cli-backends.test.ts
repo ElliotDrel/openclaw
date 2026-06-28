@@ -103,17 +103,21 @@ function createClaudeCliOverrideConfig(config: CliBackendConfig): OpenClawConfig
 }
 
 const NORMALIZED_CLAUDE_FALLBACK_ARGS = [
+  "--bare",
   "-p",
   "--output-format",
   "stream-json",
+  "--safe-mode",
   "--setting-sources",
   "user",
 ];
 
 const NORMALIZED_CLAUDE_FALLBACK_RESUME_ARGS = [
+  "--bare",
   "-p",
   "--resume",
   "{sessionId}",
+  "--safe-mode",
   "--setting-sources",
   "user",
 ];
@@ -145,8 +149,18 @@ function normalizeTestClaudeArgs(
   const normalized: string[] = [];
   let hasSettingSources = false;
   let hasPermissionMode = false;
+  let sawBare = false;
+  let sawSafeMode = false;
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
+    if (arg === "--bare") {
+      sawBare = true;
+      continue;
+    }
+    if (arg === "--safe-mode") {
+      sawSafeMode = true;
+      continue;
+    }
     if (arg === "--dangerously-skip-permissions") {
       continue;
     }
@@ -187,6 +201,12 @@ function normalizeTestClaudeArgs(
     }
     normalized.push(arg);
   }
+  if (!sawBare || normalized[0] !== "--bare") {
+    normalized.unshift("--bare");
+  }
+  if (!sawSafeMode) {
+    normalized.push("--safe-mode");
+  }
   if (!hasSettingSources) {
     normalized.push("--setting-sources", "user");
   }
@@ -222,18 +242,26 @@ beforeEach(() => {
       config: {
         command: "claude",
         args: [
+          "--bare",
+          "-p",
+          "--output-format",
           "stream-json",
           "--include-partial-messages",
           "--verbose",
+          "--safe-mode",
           "--setting-sources",
           "user",
           "--allowedTools",
           "mcp__openclaw__*",
         ],
         resumeArgs: [
+          "--bare",
+          "-p",
+          "--output-format",
           "stream-json",
           "--include-partial-messages",
           "--verbose",
+          "--safe-mode",
           "--setting-sources",
           "user",
           "--allowedTools",
@@ -711,18 +739,22 @@ describe("resolveCliBackendConfig claude-cli defaults", () => {
     expect(resolved).not.toBeNull();
     expect(resolved?.config.args).not.toContain("--dangerously-skip-permissions");
     expect(resolved?.config.args).toEqual([
+      "--bare",
       "-p",
       "--permission-mode",
       "acceptEdits",
+      "--safe-mode",
       "--setting-sources",
       "user",
     ]);
     expect(resolved?.config.resumeArgs).not.toContain("--dangerously-skip-permissions");
     expect(resolved?.config.resumeArgs).toEqual([
+      "--bare",
       "-p",
       "--permission-mode=acceptEdits",
       "--resume",
       "{sessionId}",
+      "--safe-mode",
       "--setting-sources",
       "user",
     ]);
@@ -755,18 +787,22 @@ describe("resolveCliBackendConfig claude-cli defaults", () => {
 
     expect(resolved).not.toBeNull();
     expect(resolved?.config.args).toEqual([
+      "--bare",
       "-p",
+      "--safe-mode",
       "--setting-sources",
       "user",
       "--permission-mode",
       "acceptEdits",
     ]);
     expect(resolved?.config.resumeArgs).toEqual([
+      "--bare",
       "-p",
-      "--setting-sources=user",
+      "--permission-mode=acceptEdits",
       "--resume",
       "{sessionId}",
-      "--permission-mode=acceptEdits",
+      "--safe-mode",
+      "--setting-sources=user",
     ]);
   });
 
@@ -897,20 +933,24 @@ describe("resolveCliBackendConfig claude-cli defaults", () => {
     expect(resolved?.bundleMcp).toBe(true);
     expect(resolved?.bundleMcpMode).toBe("claude-config-file");
     expect(resolved?.config.args).toEqual([
+      "--bare",
       "-p",
       "--output-format",
       "json",
+      "--safe-mode",
       "--setting-sources",
       "user",
       "--permission-mode",
       "bypassPermissions",
     ]);
     expect(resolved?.config.resumeArgs).toEqual([
+      "--bare",
       "-p",
       "--output-format",
       "json",
       "--resume",
       "{sessionId}",
+      "--safe-mode",
       "--setting-sources",
       "user",
       "--permission-mode",

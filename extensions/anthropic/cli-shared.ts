@@ -58,6 +58,7 @@ export const CLAUDE_CLI_CLEAR_ENV = [
 ] as const;
 
 const CLAUDE_LEGACY_SKIP_PERMISSIONS_ARG = "--dangerously-skip-permissions";
+const CLAUDE_BARE_ARG = "--bare";
 const CLAUDE_PERMISSION_MODE_ARG = "--permission-mode";
 const CLAUDE_SETTING_SOURCES_ARG = "--setting-sources";
 const CLAUDE_SAFE_MODE_ARG = "--safe-mode";
@@ -135,6 +136,14 @@ export function normalizeClaudePermissionArgs(
   return normalized;
 }
 
+export function normalizeClaudeBareArgs(args?: string[]): string[] | undefined {
+  if (!args) {
+    return args;
+  }
+  const normalized = args.filter((arg) => arg !== CLAUDE_BARE_ARG);
+  return [CLAUDE_BARE_ARG, ...normalized];
+}
+
 export function normalizeClaudeSettingSourcesArgs(args?: string[]): string[] | undefined {
   if (!args) {
     return args;
@@ -188,9 +197,16 @@ export function normalizeClaudeBackendConfig(
   const permission = resolveClaudePermissionMode(context);
   return {
     ...config,
-    args: normalizeClaudePermissionArgs(normalizeClaudeSettingSourcesArgs(normalizeClaudeSafeModeArgs(config.args)), permission),
+    args: normalizeClaudePermissionArgs(
+      normalizeClaudeSettingSourcesArgs(
+        normalizeClaudeSafeModeArgs(normalizeClaudeBareArgs(config.args)),
+      ),
+      permission,
+    ),
     resumeArgs: normalizeClaudePermissionArgs(
-      normalizeClaudeSettingSourcesArgs(normalizeClaudeSafeModeArgs(config.resumeArgs)),
+      normalizeClaudeSettingSourcesArgs(
+        normalizeClaudeSafeModeArgs(normalizeClaudeBareArgs(config.resumeArgs)),
+      ),
       permission,
     ),
     output,
